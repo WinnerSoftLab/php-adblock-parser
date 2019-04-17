@@ -61,7 +61,7 @@ class AdblockParser
                 $rules = preg_split("/(\r\n|\n|\r)/", $content);
                 $this->addRules($rules);
             }
-            // array of resources
+        // array of resources
         } elseif (is_array($path)) {
             foreach ($path as $item) {
                 $this->loadRules($item);
@@ -78,25 +78,37 @@ class AdblockParser
     }
 
     /**
-     * @param string $url
+     * @param string $entry
+     * @return string
+     */
+    public function getSearchEntry(string $entry): string
+    {
+        return preg_replace('/^(https?:)?(\/\/)?(www\.)?(.*)?/i', '$4', $entry);
+    }
+
+    /**
+     * @param string $entry
      * @return string[]
      * @throws \Exception
      */
-    public function shouldBlock($url)
+    public function shouldBlock(string $entry): array
     {
         $rules = [];
-        $url = trim($url);
+        $entry = trim($entry);
 
-        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-            throw new \Exception("Invalid URL");
-        }
+        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_URL);
 
         foreach ($this->rules as $rule) {
-            if ($rule->isComment() || $rule->isHtml() || $rule->isException()) {
+            if ($rule->isComment() || $rule->isHtml()) {
                 continue;
             }
 
-            if ($rule->matchUrl($url)) {
+            $directMatchEntry = $this->getSearchEntry($entry);
+            $isDirectMatch = !$rule->isException() && strpos($rule->getRule(), $directMatchEntry) !== false;
+            if ($isDirectMatch || ($isUrl && $rule->matchUrl($entry))) {
+                if (!$isDirectMatch && $rule->isException()) {
+                    return [];
+                }
                 $rules[] = $rule->getRule();
             }
         }

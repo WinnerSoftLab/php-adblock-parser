@@ -1,7 +1,10 @@
 <?php
-
 namespace Limonte;
 
+/**
+ * Class AdblockRule
+ * @package Limonte
+ */
 class AdblockRule
 {
     const FILTER_REGEXES = [
@@ -54,11 +57,11 @@ class AdblockRule
         if (Str::startsWith($rule, '!') || Str::startsWith($rule, '[Adblock')) {
             $this->isComment = true;
 
-            // HTML rule
+        // HTML rule
         } elseif (Str::contains($rule, '##') || Str::contains($rule, '#@#')) {
             $this->isHtml = true;
 
-            // URI rule
+        // URI rule
         } else {
             $this->makeRegex();
         }
@@ -118,9 +121,6 @@ class AdblockRule
         return $this->isException;
     }
 
-    /**
-     * @throws InvalidRuleException
-     */
     private function makeRegex()
     {
         if (empty($this->rule)) {

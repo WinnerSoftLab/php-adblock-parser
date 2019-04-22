@@ -3,13 +3,24 @@ namespace Limonte;
 
 class AdblockParser
 {
+    /**
+     * @var AdblockRule[]
+     */
     private $rules;
 
     private $cacheFolder;
 
     private $cacheExpire = 1; // 1 day
 
-    public function __construct($rules = [])
+    public function __construct(array $rules = [])
+    {
+        $this->initRules($rules);
+    }
+
+    /**
+     * @param array $rules
+     */
+    public function initRules(array $rules = [])
     {
         $this->rules = [];
         $this->addRules($rules);
@@ -67,32 +78,42 @@ class AdblockParser
     }
 
     /**
-     * @param  string  $url
-     *
-     * @return boolean
+     * @param string $entry
+     * @return string
      */
-    public function shouldBlock($url)
+    public function getSearchEntry(string $entry): string
     {
-        $url = trim($url);
+        return preg_replace('/^(https?:)?(\/\/)?(www\.)?(.*)?/i', '$4', $entry);
+    }
 
-        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-            throw new \Exception("Invalid URL");
-        }
+    /**
+     * @param string $entry
+     * @return string[]
+     * @throws \Exception
+     */
+    public function shouldBlock(string $entry): array
+    {
+        $rules = [];
+        $entry = trim($entry);
+
+        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_URL);
 
         foreach ($this->rules as $rule) {
             if ($rule->isComment() || $rule->isHtml()) {
                 continue;
             }
 
-            if ($rule->matchUrl($url)) {
-                if ($rule->isException()) {
-                    return false;
+            $directMatchEntry = $this->getSearchEntry($entry);
+            $isDirectMatch = !$rule->isException() && strpos($rule->getRule(), $directMatchEntry) !== false;
+            if ($isDirectMatch || ($isUrl && $rule->matchUrl($entry))) {
+                if (!$isDirectMatch && $rule->isException()) {
+                    return [];
                 }
-                return true;
+                $rules[] = $rule->getRule();
             }
         }
 
-        return false;
+        return $rules;
     }
 
     /**

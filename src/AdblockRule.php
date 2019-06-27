@@ -13,6 +13,8 @@ class AdblockRule
         '/([\\\.\$\+\?\{\}\(\)\[\]\/])/' => '\\\\$1'
     ];
 
+    const DOMAIN_PLACEHOLDER = 'domain=';
+
     /**
      * @var string
      */
@@ -37,6 +39,16 @@ class AdblockRule
      * @var bool
      */
     private $isException = false;
+
+    /**
+     * @var array
+     */
+    private $domainsIncluded = [];
+
+    /**
+     * @var array
+     */
+    private $domainsExcluded = [];
 
 
     /**
@@ -74,10 +86,18 @@ class AdblockRule
      */
     public function matchUrl($url)
     {
-        try {
-            return (boolean)preg_match('/' . $this->getRegex() . '/', $url);
-        } catch (\Exception $e) {
-            throw  new \Exception($e);
+        $domain = parse_url($url, PHP_URL_HOST);
+        if (
+            (!$this->domainsIncluded || $this->domainsIncluded && $this->isIncluded($domain))
+            && (!$this->domainsExcluded || $this->domainsExcluded && !$this->isExcluded($domain))
+        ) {
+            try {
+                return (boolean)preg_match('/' . $this->getRegex() . '/', $url);
+            } catch (\Exception $e) {
+                throw  new \Exception($e);
+            }
+        } else {
+            return false;
         }
     }
 
@@ -121,6 +141,24 @@ class AdblockRule
         return $this->isException;
     }
 
+    /**
+     * @param $domain
+     * @return bool
+     */
+    public function isIncluded($domain): bool
+    {
+        return in_array($domain, $this->domainsIncluded);
+    }
+
+    /**
+     * @param $domain
+     * @return bool
+     */
+    public function isExcluded($domain): bool
+    {
+        return in_array($domain, $this->domainsExcluded);
+    }
+
     private function makeRegex()
     {
         if (empty($this->rule)) {
@@ -128,6 +166,10 @@ class AdblockRule
         }
 
         $regex = $this->rule;
+
+        $domains = $this->getDomainsByPlaceholder(self::DOMAIN_PLACEHOLDER, $regex);
+        $this->domainsExcluded = $domains['excluded'];
+        $this->domainsIncluded = $domains['included'];
 
         foreach (self::FILTER_REGEXES as $rule => $replacement) {
             $regex = preg_replace($rule, $replacement, $regex);
@@ -161,5 +203,33 @@ class AdblockRule
         $regex = preg_replace("/\|(?![\$])/", "\|$1", $regex);
 
         $this->regex = $regex;
+    }
+
+    /**
+     * @param string $placeholder
+     * @param string $rule
+     * @return array
+     */
+    private function getDomainsByPlaceholder(string $placeholder, string $rule): array
+    {
+        $results = [
+            'included' => [],
+            'excluded' => []
+        ];
+        $domains = '';
+        $pos = strpos($rule, $placeholder);
+        if ($pos !== false) {
+            $domains = substr($rule, $pos + strlen($placeholder), strlen($rule));
+        }
+
+        foreach (array_filter(explode('|', $domains)) as $domain) {
+            if (strpos($domain, '~') !== false) {
+                $results['excluded'][] = trim(str_replace('~', '', $domain));
+            } else {
+                $results['included'][] = trim($domain);
+            }
+        }
+
+        return $results;
     }
 }

@@ -19,11 +19,21 @@ class AdblockParser
 
     /**
      * @param array $rules
+     * @return AdblockRule[]
      */
     public function initRules(array $rules = [])
     {
         $this->rules = [];
         $this->addRules($rules);
+        return $this->rules;
+    }
+
+    /**
+     * @param AdblockRule[] $rules
+     */
+    public function setInitiatedRules(array $rules)
+    {
+        $this->rules = $rules;
     }
 
     /**

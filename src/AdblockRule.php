@@ -87,15 +87,8 @@ class AdblockRule
     public function matchUrl($url)
     {
         $domain = parse_url($url, PHP_URL_HOST);
-        if (
-            (!$this->domainsIncluded || $this->domainsIncluded && $this->isIncluded($domain))
-            && (!$this->domainsExcluded || $this->domainsExcluded && !$this->isExcluded($domain))
-        ) {
-            try {
-                return (boolean)preg_match('/' . $this->getRegex() . '/', $url);
-            } catch (\Exception $e) {
-                throw  new \Exception($e);
-            }
+        if ($this->isIncluded($domain) || !$this->isExcluded($domain)) {
+            return (boolean)preg_match('/' . $this->getRegex() . '/', $url);
         } else {
             return false;
         }

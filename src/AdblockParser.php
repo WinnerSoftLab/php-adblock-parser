@@ -43,7 +43,10 @@ class AdblockParser
     {
         foreach ($rules as $rule) {
             try {
-                $this->rules[] = new AdblockRule($rule);
+                $rule = new AdblockRule($rule);
+                if (!$rule->isComment() && !$rule->isHtml()) {
+                    $this->rules[] = $rule;
+                }
             } catch (InvalidRuleException $e) {
                 // Skip invalid rules
             }
@@ -98,23 +101,20 @@ class AdblockParser
 
     /**
      * @param string $entry
-     * @return string[]
+     * @param bool $checkDirect
+     * @return array
      * @throws \Exception
      */
-    public function shouldBlock(string $entry): array
+    public function shouldBlock(string $entry, bool $checkDirect = true): array
     {
         $rules = [];
         $entry = trim($entry);
 
         $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_URL);
+        $directMatchEntry = $this->getSearchEntry($entry);
 
         foreach ($this->rules as $rule) {
-            if ($rule->isComment() || $rule->isHtml()) {
-                continue;
-            }
-
-            $directMatchEntry = $this->getSearchEntry($entry);
-            $isDirectMatch = !$rule->isException() && strpos($rule->getRule(), $directMatchEntry) !== false;
+            $isDirectMatch = $checkDirect && !$rule->isException() && strpos($rule->getRule(), $directMatchEntry) !== false;
             if ($isDirectMatch || ($isUrl && $rule->matchUrl($entry))) {
                 if (!$isDirectMatch && $rule->isException()) {
                     return [];
@@ -124,16 +124,6 @@ class AdblockParser
         }
 
         return $rules;
-    }
-
-    /**
-     * @param  string  $url
-     *
-     * @return boolean
-     */
-    public function shouldNotBlock($url)
-    {
-        return !$this->shouldBlock($url);
     }
 
     /**

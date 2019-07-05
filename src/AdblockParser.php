@@ -110,7 +110,7 @@ class AdblockParser
         $rules = [];
         $entry = trim($entry);
 
-        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_URL);
+        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_DOMAIN);
         $directMatchEntry = $this->getSearchEntry($entry);
 
         foreach ($this->rules as $rule) {

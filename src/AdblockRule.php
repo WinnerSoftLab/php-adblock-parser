@@ -89,9 +89,8 @@ class AdblockRule
         $domain = parse_url($url, PHP_URL_HOST);
         if ($this->isIncluded($domain) || !$this->isExcluded($domain)) {
             return (boolean)preg_match('/' . $this->getRegex() . '/', $url);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /**
@@ -160,7 +159,7 @@ class AdblockRule
 
         $regex = $this->rule;
 
-        $domains = $this->getDomainsByPlaceholder(self::DOMAIN_PLACEHOLDER, $regex);
+        $domains = $this->getDomainsByPlaceholder($regex);
         $this->domainsExcluded = $domains['excluded'];
         $this->domainsIncluded = $domains['included'];
 
@@ -199,20 +198,19 @@ class AdblockRule
     }
 
     /**
-     * @param string $placeholder
      * @param string $rule
      * @return array
      */
-    private function getDomainsByPlaceholder(string $placeholder, string $rule): array
+    private function getDomainsByPlaceholder(string $rule): array
     {
         $results = [
             'included' => [],
             'excluded' => []
         ];
         $domains = '';
-        $pos = strpos($rule, $placeholder);
+        $pos = strpos($rule, self::DOMAIN_PLACEHOLDER);
         if ($pos !== false) {
-            $domains = substr($rule, $pos + strlen($placeholder), strlen($rule));
+            $domains = substr($rule, $pos + strlen(self::DOMAIN_PLACEHOLDER), strlen($rule));
         }
 
         foreach (array_filter(explode('|', $domains)) as $domain) {

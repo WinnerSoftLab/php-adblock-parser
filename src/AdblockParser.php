@@ -105,18 +105,16 @@ class AdblockParser
      * @return array
      * @throws \Exception
      */
-    public function shouldBlock(string $entry, bool $checkDirect = true): array
+    public function shouldBlock(string $entry): array
     {
         $rules = [];
         $entry = trim($entry);
 
-        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_DOMAIN);
-        $directMatchEntry = $this->getSearchEntry($entry);
+        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_URL);
 
         foreach ($this->rules as $rule) {
-            $isDirectMatch = $checkDirect && !$rule->isException() && strpos($rule->getRule(), $directMatchEntry) !== false;
-            if ($isDirectMatch || ($isUrl && $rule->matchUrl($entry))) {
-                if (!$isDirectMatch && $rule->isException()) {
+            if ($isUrl && $rule->matchUrl($entry)) {
+                if ($rule->isException()) {
                     return [];
                 }
                 $rules[] = $rule->getRule();

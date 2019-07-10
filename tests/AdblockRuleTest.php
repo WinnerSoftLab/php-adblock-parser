@@ -53,8 +53,8 @@ class AdblockRuleTest extends \PHPUnit_Framework_TestCase
     public function testMatchUrl()
     {
         $rule = new AdblockRule('swf|');
-        $this->assertTrue($rule->matchUrl("http://example.com/annoyingflash.swf"));
-        $this->assertFalse($rule->matchUrl("http://example.com/swf/index.html"));
+        $this->assertTrue($rule->matchEntry("http://example.com/annoyingflash.swf"));
+        $this->assertFalse($rule->matchEntry("http://example.com/swf/index.html"));
     }
 
     public function testComment()

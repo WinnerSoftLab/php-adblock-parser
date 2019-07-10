@@ -110,10 +110,8 @@ class AdblockParser
         $rules = [];
         $entry = trim($entry);
 
-        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_URL);
-
         foreach ($this->rules as $rule) {
-            if ($isUrl && $rule->matchUrl($entry)) {
+            if ($rule->matchEntry($entry)) {
                 if ($rule->isException()) {
                     return [];
                 }

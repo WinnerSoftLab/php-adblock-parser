@@ -80,15 +80,15 @@ class AdblockRule
     }
 
     /**
-     * @param  string $url
+     * @param  string $entry
      *
      * @return  boolean
      */
-    public function matchUrl($url)
+    public function matchEntry($entry)
     {
-        $domain = parse_url($url, PHP_URL_HOST);
+        $domain = parse_url($entry, PHP_URL_HOST);
         if ($this->isIncluded($domain) || !$this->isExcluded($domain)) {
-            return (boolean)preg_match('/' . $this->getRegex() . '/', $url);
+            return (boolean)preg_match('/' . $this->getRegex() . '/', $entry);
         }
         return false;
     }

@@ -101,9 +101,9 @@ class AdblockParser
 
     /**
      * @param string $entry
-     * @param bool $checkDirect
+     * @param bool $containsDomain
+     * @param bool $containsRoute
      * @return array
-     * @throws \Exception
      */
     public function shouldBlock(string $entry): array
     {
@@ -111,7 +111,8 @@ class AdblockParser
         $entry = trim($entry);
 
         foreach ($this->rules as $rule) {
-            if ($rule->matchEntry($entry)) {
+            $entryInfo = $this->getEntryInfo($entry);
+            if ($rule->matchEntry($entry, $entryInfo['domain'], $entryInfo['containsRoute'])) {
                 if ($rule->isException()) {
                     return [];
                 }
@@ -120,6 +121,36 @@ class AdblockParser
         }
 
         return $rules;
+    }
+
+    /**
+     * @param $entry
+     * @return array
+     */
+    public function getEntryInfo($entry): array
+    {
+        $containsRoute = false;
+        $domain = '';
+        //parse_url($entry, PHP_URL_HOST) works only if there is schema
+        if ($entry[0] === $entry[1] && $entry[0] === '/' || Str::contains($entry, '://')) {
+            $domain = parse_url($entry, PHP_URL_HOST);
+            if (strlen((string)parse_url($entry, PHP_URL_PATH)) > 1 || (bool)parse_url($entry, PHP_URL_QUERY)) {
+                $containsRoute = true;
+            }
+            //route must always start with /
+        } elseif ($entry[0] === '/') {
+            $containsRoute = true;
+        } else {
+            //additional check in case it was route without protocol
+            $parts = array_filter(explode('/', $entry));
+            $domain = $parts[0];
+            $containsRoute = count($parts) > 1;
+        }
+
+        return [
+            'domain' => str_replace('/', '',  $domain),
+            'containsRoute' => $containsRoute
+        ];
     }
 
     /**

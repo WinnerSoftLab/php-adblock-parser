@@ -96,7 +96,7 @@ class AdblockParser
         $containsRoute = false;
         $urlParts = parse_url($entry);
         $domain = $urlParts['host'] ?? '';
-        $path = (string)($urlParts['path'] ?? '');
+        $path = $urlParts['path'] ?? '';
         $query = (bool)($urlParts['query'] ?? '');
 
         //parse_url($entry, PHP_URL_HOST) works only if there is schema
@@ -109,7 +109,7 @@ class AdblockParser
             $containsRoute = true;
         } else {
             //additional check in case it was a route without protocol
-            $parts = array_filter(explode('/', $entry));
+            $parts = array_filter(explode('/', $entry, 2));
             $domain = $parts[0];
             $containsRoute = count($parts) > 1;
         }

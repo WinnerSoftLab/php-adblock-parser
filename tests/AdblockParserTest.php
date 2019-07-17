@@ -242,10 +242,25 @@ class AdblockParserTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertEntryInfo('http://test.com', 'test.com', false);
         $this->assertEntryInfo('http://test.com/', 'test.com', false);
+        $this->assertEntryInfo('http://test.com/ttt', 'test.com', true);
+        $this->assertEntryInfo('http://test.com//ttt', 'test.com', true);
+        $this->assertEntryInfo('http://test.com/ttt/tt', 'test.com', true);
+        $this->assertEntryInfo('http://test.com//ttt/tt', 'test.com', true);
+        $this->assertEntryInfo('//test.com/', 'test.com', false);
+        $this->assertEntryInfo('//test.com//', 'test.com', false);
+        $this->assertEntryInfo('//test.com/ttt', 'test.com', true);
+        $this->assertEntryInfo('//test.com/ttt/', 'test.com', true);
+        $this->assertEntryInfo('//test.com/ttt/tt', 'test.com', true);
+        $this->assertEntryInfo('//test.com//ttt', 'test.com', true);
+        $this->assertEntryInfo('//test.com//ttt/', 'test.com', true);
+        $this->assertEntryInfo('//test.com//ttt/tt', 'test.com', true);
         $this->assertEntryInfo('test.com', 'test.com', false);
         $this->assertEntryInfo('test.com/', 'test.com', false);
         $this->assertEntryInfo('/test', '', true);
         $this->assertEntryInfo('test.com/ttt', 'test.com', true);
+        $this->assertEntryInfo('test.com//ttt', 'test.com', true);
+        $this->assertEntryInfo('test.com/ttt/tt', 'test.com', true);
+        $this->assertEntryInfo('test.com//ttt/tt', 'test.com', true);
         //considering it to be a domain without mask if not proven otherwise
         $this->assertEntryInfo('test', 'test', false);
     }

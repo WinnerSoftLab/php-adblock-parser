@@ -101,7 +101,7 @@ class AdblockParser
 
         //parse_url($entry, PHP_URL_HOST) works only if there is schema
         if (Str::startsWith($entry, '//') || Str::contains($entry, '://')) {
-            if (strlen($path) > 1 || (bool)$query) {
+            if (strlen($path) > 1 && $path !== '//' || (bool)$query) {
                 $containsRoute = true;
             }
             //route must always start with /
@@ -115,7 +115,7 @@ class AdblockParser
         }
 
         return [
-            'domain' => rtrim($domain, '/'),
+            'domain' => $domain,
             'containsRoute' => $containsRoute
         ];
     }

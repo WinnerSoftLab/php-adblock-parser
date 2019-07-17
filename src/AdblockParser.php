@@ -94,19 +94,18 @@ class AdblockParser
     public function getEntryInfo(string $entry): array
     {
         $containsRoute = false;
-        $urlParts = parse_url($entry);
-        $domain = $urlParts['host'] ?? '';
-        $path = $urlParts['path'] ?? '';
-        $query = (bool)($urlParts['query'] ?? '');
 
         //parse_url($entry, PHP_URL_HOST) works only if there is schema
-        if (Str::startsWith($entry, '//') || Str::contains($entry, '://')) {
+        //route must always start with /
+        if (Str::startsWith($entry, '/') || Str::contains($entry, '://')) {
+            $urlParts = parse_url($entry);
+            $domain = $urlParts['host'] ?? '';
+            $path = $urlParts['path'] ?? '';
+            $query = (bool)($urlParts['query'] ?? '');
+
             if (strlen($path) > 1 && $path !== '//' || (bool)$query) {
                 $containsRoute = true;
             }
-            //route must always start with /
-        } elseif (Str::startsWith($entry, '/')) {
-            $containsRoute = true;
         } else {
             //additional check in case it was a route without protocol
             $parts = array_filter(explode('/', $entry, 2));

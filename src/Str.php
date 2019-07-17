@@ -1,15 +1,28 @@
 <?php
+declare(strict_types=1);
+
 namespace Limonte;
 
 class Str
 {
-    public static function startsWith($haystack, $needle)
+    /**
+     * @param string $haystack
+     * @param string $needle
+     * @return bool
+     */
+    public static function startsWith(string $haystack, string $needle):bool
     {
         $length = mb_strlen($needle);
+
         return (mb_substr($haystack, 0, $length) === $needle);
     }
 
-    public static function endsWith($haystack, $needle)
+    /**
+     * @param string $haystack
+     * @param string $needle
+     * @return bool
+     */
+    public static function endsWith(string $haystack, string $needle): bool
     {
         $length = mb_strlen($needle);
         if ($length == 0) {
@@ -19,7 +32,12 @@ class Str
         return (mb_substr($haystack, -$length) === $needle);
     }
 
-    public static function contains($haystack, $needle)
+    /**
+     * @param string $haystack
+     * @param string $needle
+     * @return bool
+     */
+    public static function contains(string $haystack, string $needle): bool
     {
         return strpos($haystack, $needle) !== false;
     }

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Limonte\Tests;
 
 use Limonte\AdblockParser;
@@ -248,6 +250,9 @@ class AdblockParserTest extends \PHPUnit_Framework_TestCase
         $this->assertEntryInfo('test', 'test', false);
     }
 
+    /**
+     * @throws \Limonte\InvalidRuleException
+     */
     public function testCheckRuleContainsRoute()
     {
         $this->assertRuleContainsRoute('/ezo/*$script,~third-party,domain=~yandex.by|~yandex.com|~yandex.kz|~yandex.ru|~yandex.ua');

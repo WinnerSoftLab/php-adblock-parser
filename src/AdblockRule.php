@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Limonte;
 
@@ -15,6 +16,13 @@ class AdblockRule
     ];
 
     const DOMAIN_PLACEHOLDER = 'domain=';
+
+    const VERSION_HEADER = '[Adblock';
+    const EXCEPTION_RULE = '@@';
+    const COMMENT_RULE = '!';
+    const HTML_RULE = '##';
+    const HTML_ELEMENT_HIDE_RULE = '#?#';
+    const HTML_ELEMENT_HIDE_EXCEPTION_RULE = '#@#';
 
     /**
      * @var string
@@ -71,17 +79,20 @@ class AdblockRule
     {
         $this->rule = $rule;
 
-        if (Str::startsWith($this->rule, '@@')) {
+        if (Str::startsWith($this->rule, self::EXCEPTION_RULE)) {
             $this->isException = true;
             $this->rule = mb_substr($this->rule, 2);
         }
 
         // comment
-        if (Str::startsWith($rule, '!') || Str::startsWith($rule, '[Adblock')) {
+        if (Str::startsWith($rule, '!') || Str::startsWith($rule, self::VERSION_HEADER)) {
             $this->isComment = true;
 
         // HTML rule
-        } elseif (Str::contains($rule, '##') || Str::contains($rule, '#@#') || Str::contains($rule, '#?#')) {
+        } elseif (Str::contains($rule, self::HTML_RULE)
+            || Str::contains($rule, self::HTML_ELEMENT_HIDE_RULE)
+            || Str::contains($rule, self::HTML_ELEMENT_HIDE_EXCEPTION_RULE)
+        ) {
             $this->isHtml = true;
 
         // URI rule
@@ -194,7 +205,7 @@ class AdblockRule
 
     private function makeRegex()
     {
-        if (empty($this->rule)) {
+        if (empty($this->rule) || $this->rule === '//') {
             throw new InvalidRuleException("Empty rule");
         }
 
@@ -215,7 +226,7 @@ class AdblockRule
             $regex = preg_replace($rule, $replacement, $regex);
         }
 
-        $this->isContainsRoute = $this->checkRuleContainsRoute($regex) || !$this->isContainsDomain;
+        $this->isContainsRoute = !$this->isContainsDomain || $this->checkRuleContainsRoute($regex);
 
         // Separator character ^ matches anything but a letter, a digit, or
         // one of the following: _ - . %. The end of the address is also
@@ -254,9 +265,10 @@ class AdblockRule
      */
     public function checkRuleContainsRoute($rule)
     {
-        $validForCheckEntry = str_replace(['://',':\/\/', '|', '^', '$'], '', $rule);
+        $validForCheckEntry = str_replace(['://', ':\/\/', '|', '^', '$'], '', $rule);
         $parts = array_filter(explode('/', $validForCheckEntry, 2));
         $route = $parts[1] ?? '';
+
         return strlen($route) > 1;
     }
 

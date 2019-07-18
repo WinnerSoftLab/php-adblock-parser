@@ -1,4 +1,0 @@
-! comment line
-/avantlink/*
-/avmws_*.js
-@@/avmws_exception.js

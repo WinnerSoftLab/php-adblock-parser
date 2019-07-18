@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Limonte;
 
 class AdblockParser
@@ -7,10 +9,6 @@ class AdblockParser
      * @var AdblockRule[]
      */
     private $rules;
-
-    private $cacheFolder;
-
-    private $cacheExpire = 1; // 1 day
 
     public function __construct(array $rules = [])
     {
@@ -25,6 +23,7 @@ class AdblockParser
     {
         $this->rules = [];
         $this->addRules($rules);
+
         return $this->rules;
     }
 
@@ -37,7 +36,7 @@ class AdblockParser
     }
 
     /**
-     * @param  string[]  $rules
+     * @param  string[] $rules
      */
     public function addRules($rules)
     {
@@ -59,30 +58,6 @@ class AdblockParser
     }
 
     /**
-     * @param  string|array  $path
-     */
-    public function loadRules($path)
-    {
-        // single resource
-        if (is_string($path)) {
-            if (filter_var($path, FILTER_VALIDATE_URL)) {
-                $content = $this->getCachedResource($path);
-            } else {
-                $content = @file_get_contents($path);
-            }
-            if ($content) {
-                $rules = preg_split("/(\r\n|\n|\r)/", $content);
-                $this->addRules($rules);
-            }
-        // array of resources
-        } elseif (is_array($path)) {
-            foreach ($path as $item) {
-                $this->loadRules($item);
-            }
-        }
-    }
-
-    /**
      * @return  array
      */
     public function getRules()
@@ -92,31 +67,17 @@ class AdblockParser
 
     /**
      * @param string $entry
-     * @return string
-     */
-    public function getSearchEntry(string $entry): string
-    {
-        return preg_replace('/^(https?:)?(\/\/)?(www\.)?(.*)?/i', '$4', $entry);
-    }
-
-    /**
-     * @param string $entry
-     * @param bool $checkDirect
      * @return array
-     * @throws \Exception
      */
-    public function shouldBlock(string $entry, bool $checkDirect = true): array
+    public function shouldBlock(string $entry): array
     {
         $rules = [];
         $entry = trim($entry);
 
-        $isUrl = (bool)filter_var($entry, FILTER_VALIDATE_DOMAIN);
-        $directMatchEntry = $this->getSearchEntry($entry);
-
+        $entryInfo = $this->getEntryInfo($entry);
         foreach ($this->rules as $rule) {
-            $isDirectMatch = $checkDirect && !$rule->isException() && strpos($rule->getRule(), $directMatchEntry) !== false;
-            if ($isDirectMatch || ($isUrl && $rule->matchUrl($entry))) {
-                if (!$isDirectMatch && $rule->isException()) {
+            if ($rule->matchEntry($entry, $entryInfo['domain'], $entryInfo['containsRoute'])) {
+                if ($rule->isException()) {
                     return [];
                 }
                 $rules[] = $rule->getRule();
@@ -127,83 +88,34 @@ class AdblockParser
     }
 
     /**
-     * Get cache folder
-     *
-     * @return string
+     * @param string $entry
+     * @return array
      */
-    public function getCacheFolder()
+    public function getEntryInfo(string $entry): array
     {
-        return $this->cacheFolder;
-    }
+        $containsRoute = false;
 
-    /**
-     * Set cache folder
-     *
-     * @param  string  $cacheFolder
-     */
-    public function setCacheFolder($cacheFolder)
-    {
-        $this->cacheFolder = rtrim($cacheFolder, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    }
+        //parse_url($entry, PHP_URL_HOST) works only if there is schema
+        //route must always start with /
+        if (Str::startsWith($entry, '/') || Str::contains($entry, '://')) {
+            $urlParts = parse_url($entry);
+            $domain = $urlParts['host'] ?? '';
+            $path = $urlParts['path'] ?? '';
+            $query = (bool)($urlParts['query'] ?? '');
 
-    /**
-     * Get cache expire (in days)
-     *
-     * @return integer
-     */
-    public function getCacheExpire()
-    {
-        return $this->cacheExpire;
-    }
-
-    /**
-     * Set cache expire (in days)
-     *
-     * @param  integer  $expireInDays
-     */
-    public function setCacheExpire($expireInDays)
-    {
-        $this->cacheExpire = $expireInDays;
-    }
-
-    /**
-     * Clear external resources cache
-     */
-    public function clearCache()
-    {
-        if ($this->cacheFolder) {
-            foreach (glob($this->cacheFolder . '*') as $file) {
-                unlink($file);
+            if (strlen($path) > 1 && $path !== '//' || (bool)$query) {
+                $containsRoute = true;
             }
-        }
-    }
-
-    /**
-     * @param  string  $url
-     *
-     * @return string
-     */
-    private function getCachedResource($url)
-    {
-        if (!$this->cacheFolder) {
-            return @file_get_contents($url);
-        }
-
-        $cacheFile = $this->cacheFolder . basename($url) . md5($url);
-
-        if (file_exists($cacheFile) && (filemtime($cacheFile) > (time() - 60 * 24 * $this->cacheExpire))) {
-            // Cache file is less than five minutes old.
-            // Don't bother refreshing, just use the file as-is.
-            $content = @file_get_contents($cacheFile);
         } else {
-            // Our cache is out-of-date, so load the data from our remote server,
-            // and also save it over our cache for next time.
-            $content = @file_get_contents($url);
-            if ($content) {
-                file_put_contents($cacheFile, $content, LOCK_EX);
-            }
+            //additional check in case it was a route without protocol
+            $parts = array_filter(explode('/', $entry, 2));
+            $domain = $parts[0];
+            $containsRoute = count($parts) > 1;
         }
 
-        return $content;
+        return [
+            'domain' => $domain,
+            'containsRoute' => $containsRoute
+        ];
     }
 }
